@@ -1,14 +1,35 @@
 {
   "lib/core": {
+    "branch": {
+      "name": "script-updates",
+      "rev": "d6834c2096f7d8c748c632d3acb12b5aa81eb9c1"
+    }
+  },
+  "lib/createx": {
     "tag": {
-      "name": "v1.0.2",
-      "rev": "a7b6bbdcd917ad4fe4e4607b26b8cf7a5ff3fa81"
+      "name": "v1.0.0",
+      "rev": "cbac803268835138f86a69bfe01fcf05a50e0447"
     }
   },
   "lib/forge-std": {
     "tag": {
       "name": "v1.10.0",
       "rev": "8bbcf6e3f8f62f419e5429a0bd89331c85c37824"
+    }
+  },
+  "lib/network": {
+    "branch": {
+      "name": "scripts-improvements",
+      "rev": "e4a339dd56a268568509a006035374f4e593d318"
+    }
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "c64a1edb67b6e3f4a15cca8909c9482ad33a02b0"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "tag": {
+      "name": "v5.4.0",
+      "rev": "e725abddf1e01cf05ace496e950fc8e243cc7cab"
     }
   }
 }
