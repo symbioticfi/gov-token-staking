@@ -1,0 +1,27 @@
+{
+  "name": "@symbioticfi/gov-token-staking",
+  "version": "1.0.0-alpha.0",
+  "description": "Symbiotic Governance Token Staking tooling helps protocols' contributors to launch a staking program for their governance token.",
+  "homepage": "https://symbiotic.fi/gov-token-staking",
+  "bugs": "https://github.com/symbioticfi/gov-token-staking/issues",
+  "license": "MIT",
+  "author": "Symbiotic Team",
+  "files": [
+    "examples/**/*",
+    "src/**/*",
+    "script/**/*",
+    "test/mocks/**/*",
+    "out/**/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/symbioticfi/gov-token-staking.git"
+  },
+  "keywords": [
+    "solidity",
+    "ethereum",
+    "smart",
+    "contracts",
+    "security"
+  ]
+}

@@ -1,0 +1,39 @@
+# OS / Editor
+**/.DS_Store
+.DS_Store
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+
+# Node / Package managers
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Build artifacts (Vite / general)
+**/dist/
+**/.vite
+**/.cache
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Env files (keep examples)
+.env
+.env.*
+!.env.example
+
+# Local tool caches
+.eslintcache
+
+# Contracts build artifacts
+broadcast/
+out/
+cache/
