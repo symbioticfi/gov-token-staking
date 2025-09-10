@@ -6,7 +6,6 @@ import {Script, console2} from "lib/forge-std/src/Script.sol";
 import {DeployNetworkForVaultsBase} from "@symbioticfi/network/script/base/DeployNetworkForVaultsBase.sol";
 import {DeployNetworkBase} from "@symbioticfi/network/script/base/DeployNetworkBase.sol";
 
-import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {DeployVaultBase} from "@symbioticfi/core/script/base/DeployVaultBase.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
@@ -211,42 +210,14 @@ contract DeployNetworkAndVault is Script {
         return deployNetworkForVaultsBase.run(deployNetworkParams);
     }
 
-    function _updateNetworkParams(
-        address network,
-        address vault,
-        DeployNetworkBase.DeployNetworkParams memory deployNetworkParams,
-        DeployNetworkBase.DeployNetworkParams memory updatedDeployNetworkParams
-    ) internal {
-        DeployNetworkForVaultsBase deployNetworkForVaultsBase = new DeployNetworkForVaultsBase();
-
-        address[] memory vaults = new address[](1);
-        vaults[0] = vault;
-        uint256[] memory maxNetworkLimits = new uint256[](1);
-        maxNetworkLimits[0] = MAX_NETWORK_LIMIT;
-        address[] memory resolvers = new address[](1);
-        resolvers[0] = RESOLVER;
-
-        DeployNetworkForVaultsBase.DeployNetworkForVaultsParams memory deployNetworkForVaultsParams =
-        DeployNetworkForVaultsBase.DeployNetworkForVaultsParams({
-            deployNetworkParams: deployNetworkParams,
-            vaults: vaults,
-            maxNetworkLimits: maxNetworkLimits,
-            resolvers: resolvers,
-            subnetworkId: SUBNETWORK_ID
-        });
-        deployNetworkForVaultsBase.updateNetworkForVaults(
-            network, deployNetworkForVaultsParams, updatedDeployNetworkParams
-        );
-    }
-
     function _updateDelegatorParams(address network, address delegator) internal {
         (,, address deployer) = vm.readCallers();
 
         vm.startBroadcast();
         bytes32 subnetwork = address(network).subnetwork(SUBNETWORK_ID);
 
-        INetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
-        INetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATOR, OPERATOR_SHARE);
+        NetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
+        NetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATOR, OPERATOR_SHARE);
 
         if (!_isDeployerNetworkAllocationSetter) {
             NetworkRestakeDelegator(delegator).renounceRole(
