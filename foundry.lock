@@ -2,7 +2,7 @@
   "lib/core": {
     "branch": {
       "name": "script-updates",
-      "rev": "ce0467818e5b8dc6384b834f087c4c84ef08dad4"
+      "rev": "1e10faf03b1a507869d7f5e76858459a747e6349"
     }
   },
   "lib/createx": {
@@ -19,8 +19,8 @@
   },
   "lib/network": {
     "branch": {
-      "name": "scripts-improvements",
-      "rev": "8d92fe5ce87bfe5e6448d986854ddaf3b0406f6a"
+      "name": "main",
+      "rev": "a2614a5b688d9b26293ad22f59d07714425e5189"
     }
   },
   "lib/openzeppelin-contracts": {

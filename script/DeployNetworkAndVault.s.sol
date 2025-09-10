@@ -8,28 +8,11 @@ import {DeployNetworkBase} from "@symbioticfi/network/script/base/DeployNetworkB
 
 import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
 import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
-import {IFullRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/IFullRestakeDelegator.sol";
-import {IOperatorSpecificDelegator} from "@symbioticfi/core/src/interfaces/delegator/IOperatorSpecificDelegator.sol";
-import {IOperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/interfaces/delegator/IOperatorNetworkSpecificDelegator.sol";
 import {DeployVaultBase} from "@symbioticfi/core/script/base/DeployVaultBase.sol";
-import {IVaultConfigurator} from "@symbioticfi/core/src/interfaces/IVaultConfigurator.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
-import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
-import {IFullRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/IFullRestakeDelegator.sol";
-import {IOperatorSpecificDelegator} from "@symbioticfi/core/src/interfaces/delegator/IOperatorSpecificDelegator.sol";
-import {IOperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/interfaces/delegator/IOperatorNetworkSpecificDelegator.sol";
 import {IBaseSlasher} from "@symbioticfi/core/src/interfaces/slasher/IBaseSlasher.sol";
-import {ISlasher} from "@symbioticfi/core/src/interfaces/slasher/ISlasher.sol";
-import {IVetoSlasher} from "@symbioticfi/core/src/interfaces/slasher/IVetoSlasher.sol";
 import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
-import {Vault} from "@symbioticfi/core/src/contracts/vault/Vault.sol";
-import {FullRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/FullRestakeDelegator.sol";
-import {OperatorSpecificDelegator} from "@symbioticfi/core/src/contracts/delegator/OperatorSpecificDelegator.sol";
-import {OperatorNetworkSpecificDelegator} from
-    "@symbioticfi/core/src/contracts/delegator/OperatorNetworkSpecificDelegator.sol";
 
 /**
  * @title DeployNetworkAndVault
@@ -40,129 +23,112 @@ import {OperatorNetworkSpecificDelegator} from
 contract DeployNetworkAndVault is Script {
     using Subnetwork for address;
 
-    // AccessControl role constants
-    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
     // ============ VAULT CONFIGURATION ============
-
-    // Vault Configurator address (must be deployed beforehand)
-    address public VAULT_CONFIGURATOR = 0x0000000000000000000000000000000000000000;
 
     // Vault owner address
     address public VAULT_OWNER = 0x0000000000000000000000000000000000000000;
+    // Address of the collateral token
+    address COLLATERAL = 0x0000000000000000000000000000000000000000;
+    // Vault's burner to send slashed funds to (e.g., 0xdEaD or some unwrapper contract; not used in case of no slasher)
+    address BURNER = 0x0000000000000000000000000000000000000000;
+    // Duration of the vault epoch (the withdrawal delay for staker varies from EPOCH_DURATION to 2 * EPOCH_DURATION depending on when the withdrawal is requested)
+    uint48 EPOCH_DURATION = 1 days;
+    // Setting depending on the delegator type:
+    // 0. NetworkLimitSetRoleHolders (adjust allocations for networks)
+    // 1. NetworkLimitSetRoleHolders (adjust allocations for networks)
+    // 2. NetworkLimitSetRoleHolders (adjust allocations for networks)
+    // 3. network (the only network that will receive the stake; should be an array with a single element)
+    address[] NETWORK_ALLOCATION_SETTERS_OR_NETWORK = [0x0000000000000000000000000000000000000000];
+    // Setting depending on the delegator type:
+    // 0. OperatorNetworkSharesSetRoleHolders (adjust allocations for operators inside networks; in shares, resulting percentage is operatorShares / totalOperatorShares)
+    // 1. OperatorNetworkLimitSetRoleHolders (adjust allocations for operators inside networks; in shares, resulting percentage is operatorShares / totalOperatorShares)
+    // 2. operator (the only operator that will receive the stake; should be an array with a single element)
+    // 3. operator (the only operator that will receive the stake; should be an array with a single element)
+    address[] OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR = [0x0000000000000000000000000000000000000000];
+    // Operator address
+    address OPERATOR = 0x0000000000000000000000000000000000000000;
+    // Whether to deploy a slasher
+    bool WITH_SLASHER = false;
+    // Type of the slasher:
+    //  0. Slasher (allows instant slashing)
+    //  1. VetoSlasher (allows having a veto period if the resolver is set)
+    uint64 SLASHER_INDEX = 1;
+    // Duration of a veto period (should be less than EPOCH_DURATION)
+    uint48 VETO_DURATION = 1 days;
 
-    // Collateral token address
-    address public COLLATERAL = 0x0000000000000000000000000000000000000000;
+    // Optional
 
-    // Burner address (can be zero address if no burning is needed)
-    address public BURNER = 0x0000000000000000000000000000000000000000;
-
-    // Epoch duration in seconds
-    uint48 public EPOCH_DURATION = 7 days;
-
-    // Whitelisted depositors (empty array means no whitelist)
-    address[] public WHITELISTED_DEPOSITORS = new address[](0);
-
-    // Deposit limit (0 means no limit)
-    uint256 public DEPOSIT_LIMIT = 0;
-
-    // Delegator type: 0=NetworkRestake, 1=FullRestake, 2=OperatorSpecific, 3=OperatorNetworkSpecific
-    uint64 public DELEGATOR_INDEX = 0;
-
-    // Hook address (can be zero address if no hook is needed)
-    address public HOOK = 0x0000000000000000000000000000000000000000;
-
-    // Whether to deploy with slasher
-    bool public WITH_SLASHER = true;
-
-    // Slasher type: 0=Slasher, 1=VetoSlasher
-    uint64 public SLASHER_INDEX = 1;
-
-    // Veto duration for VetoSlasher (only used if SLASHER_INDEX = 1)
-    uint48 public VETO_DURATION = 3 days;
-
+    // Deposit limit (maximum amount of the active stake allowed in the vault)
+    uint256 DEPOSIT_LIMIT = 0;
+    // Addresses of the whitelisted depositors
+    address[] WHITELISTED_DEPOSITORS = new address[](0);
+    // Address of the hook contract which, e.g., can automatically adjust the allocations on slashing events (not used in case of no slasher)
+    address HOOK = 0x0000000000000000000000000000000000000000;
+    // Delay in epochs for a network to update a resolver
+    uint48 RESOLVER_SET_EPOCHS_DELAY = 3;
     // Network limit
-    uint256 public NETWORK_LIMIT = 1_000_000 ether;
-
-    // Operator network limit for FullRestakeDelegator
-    uint256 public OPERATOR_NETWORK_LIMIT = 100_000 ether;
-
-    // operators for NetworkRestakeDelegator and FullRestakeDelegator
-    address[] public OPERATORS = new address[](0);
-
+    uint256 public NETWORK_LIMIT = type(uint256).max;
     // opertator shares for NetworkRestakeDelegator
     uint256 public OPERATOR_SHARE = 1e18;
-
-    // delay in epochs for a network to update a resolver
-    uint48 public RESOLVER_SET_EPOCHS_DELAY = 3;
-
-    // allocation setters for NetworkRestakeDelegator and FullRestakeDelegator
-    address[] public NETWORK_ALLOCATION_SETTERS = [0x0000000000000000000000000000000000000000];
-
-    // allocation setters for FullRestakeDelegator
-    address[] public OPERATOR_ALLOCATION_SETTERS = [0x0000000000000000000000000000000000000000];
 
     // ============ NETWORK CONFIGURATION ============
 
     // Network name
     string public NETWORK_NAME = "My Symbiotic Network";
+    // Default minimum delay (will be applied for any action that doesn't have a specific delay yet)
+    uint256 DEFAULT_MIN_DELAY = 3 days;
+    // Cold actions delay (a delay that will be applied for major actions like upgradeProxy and setMiddleware)
+    uint256 COLD_ACTIONS_DELAY = 14 days;
+    // Hot actions delay (a delay that will be applied for minor actions like setMaxNetworkLimit and setResolver)
+    uint256 HOT_ACTIONS_DELAY = 0;
+    // Admin address (will become executor, proposer, and default admin by default)
+    address NETWORK_ADMIN = 0x0000000000000000000000000000000000000000;
+    // Maximum amount of delegation that network is ready to receive (multiple vaults can be set)
+    uint256 MAX_NETWORK_LIMIT = 0;
+    // Resolver address (optional, is applied only if VetoSlasher is used) (multiple vaults can be set)
+    address RESOLVER = 0x0000000000000000000000000000000000000000;
 
-    // Network metadata URI
-    string public METADATA_URI = "https://example.com/metadata";
+    // Optional
 
-    // Network admin address (will become executor, proposer, and default admin)
-    address public NETWORK_ADMIN = 0x0000000000000000000000000000000000000000;
-
-    // Default minimum delay for network actions
-    uint256 public DEFAULT_MIN_DELAY = 3 days;
-
-    // Cold actions delay (upgrade proxy, set middleware)
-    uint256 public COLD_ACTIONS_DELAY = 14 days;
-
-    // Hot actions delay (set max network limit, set resolver)
-    uint256 public HOT_ACTIONS_DELAY = 0;
-
-    // Maximum network limit
-    uint256 public MAX_NETWORK_LIMIT = 1_000_000 ether;
-
-    // Resolver addresses (optional, for VetoSlasher)
-    address public RESOLVER = address(0);
-
-    // Subnetwork identifier
-    uint96 public SUBNETWORK_ID = 0;
-
+    // Subnetwork Identifier (multiple subnetworks can be used, e.g., to have different resolvers for the same network)
+    uint96 SUBNETWORK_ID = 0;
+    // Metadata URI of the Network
+    string METADATA_URI = "";
     // Salt for deterministic deployment
-    bytes11 public SALT = "SymNetwork";
+    bytes11 SALT = "SymNetwork";
+
+    // ============ INTERNAL VARIABLES ============
+
+    bool internal _isDeployerNetworkAllocationSetter;
+    bool internal _isDeployerOperatorAllocationSetter;
 
     function run() public {
-        (
-            address network,
-            DeployNetworkBase.DeployNetworkParams memory deployNetworkParams,
-            DeployNetworkBase.DeployNetworkParams memory updatedDeployNetworkParams
-        ) = _deployNetwork();
-        (address vault, address delegator,) = _deployVault(network);
-        _updateNetworkParams(network, vault, deployNetworkParams, updatedDeployNetworkParams);
+        (address vault, address delegator,) = _deployVault();
+        address network = _deployNetwork(vault);
         _updateDelegatorParams(network, delegator);
-        _transferVaultOwnership(vault, delegator);
-        _validateOwnershipTransfer(vault, delegator);
+        _checkRoles(delegator);
 
         console2.log("Deployment completed successfully!");
         console2.log("Vault address:", vault);
         console2.log("Network address:", network);
     }
 
-    function _deployVault(
-        address network
-    ) internal returns (address, address, address) {
+    function _deployVault() internal returns (address, address, address) {
         console2.log("Deploying vault...");
-        // set temporarily the deployer as the vault owner
         (,, address deployer) = vm.readCallers();
 
-        if (DELEGATOR_INDEX == 3) {
-            NETWORK_ALLOCATION_SETTERS.push(network);
+        _isDeployerNetworkAllocationSetter = _contains(NETWORK_ALLOCATION_SETTERS_OR_NETWORK, deployer);
+        if (!_isDeployerNetworkAllocationSetter) {
+            NETWORK_ALLOCATION_SETTERS_OR_NETWORK.push(deployer);
+        }
+
+        _isDeployerOperatorAllocationSetter = _contains(OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR, deployer);
+        if (!_isDeployerOperatorAllocationSetter) {
+            OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR.push(deployer);
         }
 
         DeployVaultBase.DeployVaultParams memory deployVaultParams = DeployVaultBase.DeployVaultParams({
-            owner: deployer,
+            owner: VAULT_OWNER,
             vaultParams: DeployVaultBase.VaultParams({
                 baseParams: IVault.InitParams({
                     collateral: COLLATERAL,
@@ -171,23 +137,23 @@ contract DeployNetworkAndVault is Script {
                     depositWhitelist: WHITELISTED_DEPOSITORS.length > 0,
                     isDepositLimit: DEPOSIT_LIMIT > 0,
                     depositLimit: DEPOSIT_LIMIT,
-                    defaultAdminRoleHolder: deployer,
-                    depositWhitelistSetRoleHolder: deployer,
-                    depositorWhitelistRoleHolder: deployer,
-                    isDepositLimitSetRoleHolder: deployer,
-                    depositLimitSetRoleHolder: deployer
+                    defaultAdminRoleHolder: VAULT_OWNER,
+                    depositWhitelistSetRoleHolder: VAULT_OWNER,
+                    depositorWhitelistRoleHolder: VAULT_OWNER,
+                    isDepositLimitSetRoleHolder: VAULT_OWNER,
+                    depositLimitSetRoleHolder: VAULT_OWNER
                 }),
                 whitelistedDepositors: WHITELISTED_DEPOSITORS
             }),
-            delegatorIndex: DELEGATOR_INDEX,
+            delegatorIndex: 0, // NetworkRestakeDelegator
             delegatorParams: DeployVaultBase.DelegatorParams({
                 baseParams: IBaseDelegator.BaseParams({
-                    defaultAdminRoleHolder: deployer,
+                    defaultAdminRoleHolder: VAULT_OWNER,
                     hook: HOOK,
-                    hookSetRoleHolder: deployer
+                    hookSetRoleHolder: VAULT_OWNER
                 }),
-                networkAllocationSettersOrNetwork: NETWORK_ALLOCATION_SETTERS,
-                operatorAllocationSettersOrOperator: OPERATOR_ALLOCATION_SETTERS
+                networkAllocationSettersOrNetwork: NETWORK_ALLOCATION_SETTERS_OR_NETWORK,
+                operatorAllocationSettersOrOperator: OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR
             }),
             withSlasher: WITH_SLASHER,
             slasherIndex: SLASHER_INDEX,
@@ -202,38 +168,47 @@ contract DeployNetworkAndVault is Script {
         return vaultDeployer.run();
     }
 
-    function _deployNetwork()
-        internal
-        returns (address, DeployNetworkBase.DeployNetworkParams memory, DeployNetworkBase.DeployNetworkParams memory)
-    {
+    function _deployNetwork(
+        address vault
+    ) internal returns (address) {
         console2.log("Deploying network...");
         address[] memory proposers = new address[](1);
         proposers[0] = NETWORK_ADMIN;
         address[] memory executors = new address[](1);
         executors[0] = NETWORK_ADMIN;
+        address[] memory vaults = new address[](1);
+        vaults[0] = vault;
+        uint256[] memory maxNetworkLimits = new uint256[](1);
+        maxNetworkLimits[0] = MAX_NETWORK_LIMIT;
+        address[] memory resolvers = new address[](1);
+        resolvers[0] = RESOLVER;
 
-        DeployNetworkBase.DeployNetworkParams memory deployNetworkParams = DeployNetworkBase.DeployNetworkParams({
-            name: NETWORK_NAME,
-            metadataURI: METADATA_URI,
-            proposers: proposers,
-            executors: executors,
-            defaultAdminRoleHolder: NETWORK_ADMIN,
-            nameUpdateRoleHolder: NETWORK_ADMIN,
-            metadataURIUpdateRoleHolder: NETWORK_ADMIN,
-            globalMinDelay: DEFAULT_MIN_DELAY,
-            upgradeProxyMinDelay: COLD_ACTIONS_DELAY,
-            setMiddlewareMinDelay: COLD_ACTIONS_DELAY,
-            setMaxNetworkLimitMinDelay: HOT_ACTIONS_DELAY,
-            setResolverMinDelay: HOT_ACTIONS_DELAY,
-            salt: SALT
+        DeployNetworkForVaultsBase.DeployNetworkForVaultsParams memory deployNetworkParams = DeployNetworkForVaultsBase
+            .DeployNetworkForVaultsParams({
+            deployNetworkParams: DeployNetworkBase.DeployNetworkParams({
+                name: NETWORK_NAME,
+                metadataURI: METADATA_URI,
+                proposers: proposers,
+                executors: executors,
+                defaultAdminRoleHolder: NETWORK_ADMIN,
+                nameUpdateRoleHolder: NETWORK_ADMIN,
+                metadataURIUpdateRoleHolder: NETWORK_ADMIN,
+                globalMinDelay: DEFAULT_MIN_DELAY,
+                upgradeProxyMinDelay: COLD_ACTIONS_DELAY,
+                setMiddlewareMinDelay: COLD_ACTIONS_DELAY,
+                setMaxNetworkLimitMinDelay: HOT_ACTIONS_DELAY,
+                setResolverMinDelay: HOT_ACTIONS_DELAY,
+                salt: SALT
+            }),
+            vaults: vaults,
+            maxNetworkLimits: maxNetworkLimits,
+            resolvers: resolvers,
+            subnetworkId: SUBNETWORK_ID
         });
-        DeployNetworkForVaultsBase deployNetworkForVaultsBase = new DeployNetworkForVaultsBase();
-        DeployNetworkBase.DeployNetworkParams memory updatedDeployNetworkParams =
-            deployNetworkForVaultsBase.updateDeployParamsForDeployer(deployNetworkParams);
 
-        DeployNetworkBase deployNetworkBase = new DeployNetworkBase();
-        address network = deployNetworkBase.run(updatedDeployNetworkParams);
-        return (network, deployNetworkParams, updatedDeployNetworkParams);
+        DeployNetworkForVaultsBase deployNetworkForVaultsBase = new DeployNetworkForVaultsBase();
+
+        return deployNetworkForVaultsBase.run(deployNetworkParams);
     }
 
     function _updateNetworkParams(
@@ -265,236 +240,54 @@ contract DeployNetworkAndVault is Script {
     }
 
     function _updateDelegatorParams(address network, address delegator) internal {
+        (,, address deployer) = vm.readCallers();
+
         vm.startBroadcast();
         bytes32 subnetwork = address(network).subnetwork(SUBNETWORK_ID);
-        if (DELEGATOR_INDEX == 0) {
-            INetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
-            for (uint256 i = 0; i < OPERATORS.length; i++) {
-                INetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATORS[i], OPERATOR_SHARE);
-            }
-        } else if (DELEGATOR_INDEX == 1) {
-            IFullRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
-            for (uint256 i = 0; i < OPERATORS.length; i++) {
-                IFullRestakeDelegator(delegator).setOperatorNetworkLimit(
-                    subnetwork, OPERATORS[i], OPERATOR_NETWORK_LIMIT
-                );
-            }
-        } else if (DELEGATOR_INDEX == 2) {
-            IOperatorSpecificDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
+
+        INetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
+        INetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATOR, OPERATOR_SHARE);
+
+        if (!_isDeployerNetworkAllocationSetter) {
+            NetworkRestakeDelegator(delegator).renounceRole(
+                NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
+            );
         }
-        vm.stopBroadcast();
-    }
-
-    function _transferVaultOwnership(address vault, address delegator) internal {
-        vm.startBroadcast();
-
-        (,, address oldAdmin) = vm.readCallers();
-
-        Vault(vault).transferOwnership(VAULT_OWNER);
-        Vault(vault).grantRole(Vault(vault).DEFAULT_ADMIN_ROLE(), VAULT_OWNER);
-        Vault(vault).grantRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER);
-        Vault(vault).grantRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER);
-
-        Vault(vault).renounceRole(Vault(vault).DEFAULT_ADMIN_ROLE(), oldAdmin);
-        Vault(vault).renounceRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), oldAdmin);
-        Vault(vault).renounceRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), oldAdmin);
-        Vault(vault).renounceRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), oldAdmin);
-        Vault(vault).renounceRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), oldAdmin);
-
-        if (DELEGATOR_INDEX == 0) {
-            NetworkRestakeDelegator(delegator).grantRole(
-                NetworkRestakeDelegator(delegator).DEFAULT_ADMIN_ROLE(), VAULT_OWNER
-            );
-            NetworkRestakeDelegator(delegator).grantRole(
-                NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-            NetworkRestakeDelegator(delegator).grantRole(
-                NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_OWNER
-            );
-
+        if (!_isDeployerOperatorAllocationSetter) {
             NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).DEFAULT_ADMIN_ROLE(), oldAdmin
-            );
-            NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), oldAdmin
-            );
-            NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
-            );
-        } else if (DELEGATOR_INDEX == 1) {
-            FullRestakeDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-            FullRestakeDelegator(delegator).grantRole(
-                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-            FullRestakeDelegator(delegator).grantRole(
-                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-
-            FullRestakeDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            FullRestakeDelegator(delegator).renounceRole(
-                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            FullRestakeDelegator(delegator).renounceRole(
-                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            FullRestakeDelegator(delegator).renounceRole(FullRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin);
-        } else if (DELEGATOR_INDEX == 2) {
-            OperatorSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-            OperatorSpecificDelegator(delegator).grantRole(
-                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-
-            OperatorSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            OperatorSpecificDelegator(delegator).renounceRole(
-                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            OperatorSpecificDelegator(delegator).renounceRole(
-                OperatorSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
-            );
-        } else if (DELEGATOR_INDEX == 3) {
-            OperatorNetworkSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-
-            OperatorNetworkSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            OperatorNetworkSpecificDelegator(delegator).renounceRole(
-                OperatorNetworkSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
+                NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
             );
         }
 
         vm.stopBroadcast();
     }
 
-    function _validateOwnershipTransfer(address vault, address delegator) internal {
-        (,, address oldAdmin) = vm.readCallers();
-        // Validate vault role transfers
-        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), VAULT_OWNER) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), VAULT_OWNER) == false);
-
-        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), oldAdmin) == false);
-
-        assert(Vault(vault).owner() == VAULT_OWNER);
-
-        // Validate delegator role transfers based on delegator type
-        if (DELEGATOR_INDEX == 0) {
+    function _checkRoles(
+        address delegator
+    ) internal {
+        (,, address deployer) = vm.readCallers();
+        if (!_isDeployerNetworkAllocationSetter) {
             assert(
                 NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).DEFAULT_ADMIN_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).HOOK_SET_ROLE(), VAULT_OWNER
-                ) == false
-            );
-
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).DEFAULT_ADMIN_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                NetworkRestakeDelegator(delegator).hasRole(NetworkRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin)
-                    == false
-            );
-        } else if (DELEGATOR_INDEX == 1) {
-            assert(FullRestakeDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
-            assert(
-                FullRestakeDelegator(delegator).hasRole(
-                    FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                FullRestakeDelegator(delegator).hasRole(
-                    FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                FullRestakeDelegator(delegator).hasRole(FullRestakeDelegator(delegator).HOOK_SET_ROLE(), VAULT_OWNER)
-                    == false
-            );
-
-            assert(FullRestakeDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, oldAdmin) == false);
-            assert(
-                FullRestakeDelegator(delegator).hasRole(
-                    FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                FullRestakeDelegator(delegator).hasRole(
-                    FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                FullRestakeDelegator(delegator).hasRole(FullRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin)
-                    == false
-            );
-        } else if (DELEGATOR_INDEX == 2) {
-            assert(OperatorSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
-            assert(
-                OperatorSpecificDelegator(delegator).hasRole(
-                    OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-                ) == true
-            );
-            assert(
-                OperatorSpecificDelegator(delegator).hasRole(
-                    OperatorSpecificDelegator(delegator).HOOK_SET_ROLE(), VAULT_OWNER
-                ) == false
-            );
-
-            assert(OperatorSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, oldAdmin) == false);
-            assert(
-                OperatorSpecificDelegator(delegator).hasRole(
-                    OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-                ) == false
-            );
-            assert(
-                OperatorSpecificDelegator(delegator).hasRole(
-                    OperatorSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
-                ) == false
-            );
-        } else if (DELEGATOR_INDEX == 3) {
-            assert(OperatorNetworkSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
-            assert(
-                OperatorNetworkSpecificDelegator(delegator).hasRole(
-                    OperatorNetworkSpecificDelegator(delegator).HOOK_SET_ROLE(), VAULT_OWNER
-                ) == false
-            );
-
-            assert(OperatorNetworkSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, oldAdmin) == false);
-            assert(
-                OperatorNetworkSpecificDelegator(delegator).hasRole(
-                    OperatorNetworkSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
+                    NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
                 ) == false
             );
         }
+        if (!_isDeployerOperatorAllocationSetter) {
+            assert(
+                NetworkRestakeDelegator(delegator).hasRole(
+                    NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
+                ) == false
+            );
+        }
+    }
+
+    function _contains(address[] memory array, address element) internal pure returns (bool) {
+        for (uint256 i = 0; i < array.length; i++) {
+            if (array[i] == element) {
+                return true;
+            }
+        }
+        return false;
     }
 }
