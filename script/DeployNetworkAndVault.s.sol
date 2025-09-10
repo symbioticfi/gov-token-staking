@@ -143,6 +143,7 @@ contract DeployNetworkAndVault is Script {
         _updateNetworkParams(network, vault, deployNetworkParams, updatedDeployNetworkParams);
         _updateDelegatorParams(network, delegator);
         _transferVaultOwnership(vault, delegator);
+        _validateOwnershipTransfer(vault, delegator);
 
         console2.log("Deployment completed successfully!");
         console2.log("Vault address:", vault);
@@ -289,6 +290,7 @@ contract DeployNetworkAndVault is Script {
 
         (,, address oldAdmin) = vm.readCallers();
 
+        Vault(vault).transferOwnership(VAULT_OWNER);
         Vault(vault).grantRole(Vault(vault).DEFAULT_ADMIN_ROLE(), VAULT_OWNER);
         Vault(vault).grantRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER);
         Vault(vault).grantRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER);
@@ -298,20 +300,6 @@ contract DeployNetworkAndVault is Script {
         Vault(vault).renounceRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), oldAdmin);
         Vault(vault).renounceRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), oldAdmin);
         Vault(vault).renounceRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), oldAdmin);
-
-        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), VAULT_OWNER) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), VAULT_OWNER) == false);
-
-        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), oldAdmin) == false);
-        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), oldAdmin) == false);
-
-        assert(Vault(vault).owner() == address(0));
 
         if (DELEGATOR_INDEX == 0) {
             NetworkRestakeDelegator(delegator).grantRole(
@@ -336,7 +324,67 @@ contract DeployNetworkAndVault is Script {
             NetworkRestakeDelegator(delegator).renounceRole(
                 NetworkRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
             );
+        } else if (DELEGATOR_INDEX == 1) {
+            FullRestakeDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
+            FullRestakeDelegator(delegator).grantRole(
+                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
+            );
+            FullRestakeDelegator(delegator).grantRole(
+                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
+            );
 
+            FullRestakeDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
+            FullRestakeDelegator(delegator).renounceRole(
+                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
+            );
+            FullRestakeDelegator(delegator).renounceRole(
+                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), oldAdmin
+            );
+            FullRestakeDelegator(delegator).renounceRole(FullRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin);
+        } else if (DELEGATOR_INDEX == 2) {
+            OperatorSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
+            OperatorSpecificDelegator(delegator).grantRole(
+                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
+            );
+
+            OperatorSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
+            OperatorSpecificDelegator(delegator).renounceRole(
+                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
+            );
+            OperatorSpecificDelegator(delegator).renounceRole(
+                OperatorSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
+            );
+        } else if (DELEGATOR_INDEX == 3) {
+            OperatorNetworkSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
+
+            OperatorNetworkSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
+            OperatorNetworkSpecificDelegator(delegator).renounceRole(
+                OperatorNetworkSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
+            );
+        }
+
+        vm.stopBroadcast();
+    }
+
+    function _validateOwnershipTransfer(address vault, address delegator) internal {
+        (,, address oldAdmin) = vm.readCallers();
+        // Validate vault role transfers
+        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), VAULT_OWNER) == true);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
+        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), VAULT_OWNER) == true);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), VAULT_OWNER) == false);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), VAULT_OWNER) == false);
+
+        assert(Vault(vault).hasRole(Vault(vault).DEFAULT_ADMIN_ROLE(), oldAdmin) == false);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
+        assert(Vault(vault).hasRole(Vault(vault).IS_DEPOSIT_LIMIT_SET_ROLE(), oldAdmin) == false);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSIT_WHITELIST_SET_ROLE(), oldAdmin) == false);
+        assert(Vault(vault).hasRole(Vault(vault).DEPOSITOR_WHITELIST_ROLE(), oldAdmin) == false);
+
+        assert(Vault(vault).owner() == VAULT_OWNER);
+
+        // Validate delegator role transfers based on delegator type
+        if (DELEGATOR_INDEX == 0) {
             assert(
                 NetworkRestakeDelegator(delegator).hasRole(
                     NetworkRestakeDelegator(delegator).DEFAULT_ADMIN_ROLE(), VAULT_OWNER
@@ -378,23 +426,6 @@ contract DeployNetworkAndVault is Script {
                     == false
             );
         } else if (DELEGATOR_INDEX == 1) {
-            FullRestakeDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-            FullRestakeDelegator(delegator).grantRole(
-                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-            FullRestakeDelegator(delegator).grantRole(
-                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-
-            FullRestakeDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            FullRestakeDelegator(delegator).renounceRole(
-                FullRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            FullRestakeDelegator(delegator).renounceRole(
-                FullRestakeDelegator(delegator).OPERATOR_NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            FullRestakeDelegator(delegator).renounceRole(FullRestakeDelegator(delegator).HOOK_SET_ROLE(), oldAdmin);
-
             assert(FullRestakeDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
             assert(
                 FullRestakeDelegator(delegator).hasRole(
@@ -427,19 +458,6 @@ contract DeployNetworkAndVault is Script {
                     == false
             );
         } else if (DELEGATOR_INDEX == 2) {
-            OperatorSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-            OperatorSpecificDelegator(delegator).grantRole(
-                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), VAULT_OWNER
-            );
-
-            OperatorSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            OperatorSpecificDelegator(delegator).renounceRole(
-                OperatorSpecificDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), oldAdmin
-            );
-            OperatorSpecificDelegator(delegator).renounceRole(
-                OperatorSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
-            );
-
             assert(OperatorSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
             assert(
                 OperatorSpecificDelegator(delegator).hasRole(
@@ -464,13 +482,6 @@ contract DeployNetworkAndVault is Script {
                 ) == false
             );
         } else if (DELEGATOR_INDEX == 3) {
-            OperatorNetworkSpecificDelegator(delegator).grantRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER);
-
-            OperatorNetworkSpecificDelegator(delegator).renounceRole(DEFAULT_ADMIN_ROLE, oldAdmin);
-            OperatorNetworkSpecificDelegator(delegator).renounceRole(
-                OperatorNetworkSpecificDelegator(delegator).HOOK_SET_ROLE(), oldAdmin
-            );
-
             assert(OperatorNetworkSpecificDelegator(delegator).hasRole(DEFAULT_ADMIN_ROLE, VAULT_OWNER) == true);
             assert(
                 OperatorNetworkSpecificDelegator(delegator).hasRole(
@@ -485,7 +496,5 @@ contract DeployNetworkAndVault is Script {
                 ) == false
             );
         }
-
-        vm.stopBroadcast();
     }
 }
