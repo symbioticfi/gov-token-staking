@@ -29,25 +29,19 @@ contract DeployNetworkAndVault is Script {
     // Address of the collateral token
     address COLLATERAL = 0x0000000000000000000000000000000000000000;
     // Vault's burner to send slashed funds to (e.g., 0xdEaD or some unwrapper contract; not used in case of no slasher)
-    address BURNER = 0x0000000000000000000000000000000000000000;
+    address BURNER = 0x000000000000000000000000000000000000dEaD;
     // Duration of the vault epoch (the withdrawal delay for staker varies from EPOCH_DURATION to 2 * EPOCH_DURATION depending on when the withdrawal is requested)
-    uint48 EPOCH_DURATION = 1 days;
-    // Setting depending on the delegator type:
-    // 0. NetworkLimitSetRoleHolders (adjust allocations for networks)
-    // 1. NetworkLimitSetRoleHolders (adjust allocations for networks)
-    // 2. NetworkLimitSetRoleHolders (adjust allocations for networks)
-    // 3. network (the only network that will receive the stake; should be an array with a single element)
-    address[] NETWORK_ALLOCATION_SETTERS_OR_NETWORK = [0x0000000000000000000000000000000000000000];
-    // Setting depending on the delegator type:
-    // 0. OperatorNetworkSharesSetRoleHolders (adjust allocations for operators inside networks; in shares, resulting percentage is operatorShares / totalOperatorShares)
-    // 1. OperatorNetworkLimitSetRoleHolders (adjust allocations for operators inside networks; in shares, resulting percentage is operatorShares / totalOperatorShares)
-    // 2. operator (the only operator that will receive the stake; should be an array with a single element)
-    // 3. operator (the only operator that will receive the stake; should be an array with a single element)
-    address[] OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR = [0x0000000000000000000000000000000000000000];
-    // Operator address
-    address OPERATOR = 0x0000000000000000000000000000000000000000;
+    uint48 EPOCH_DURATION = 7 days;
+    // Who can adjust allocations for networks
+    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0x0000000000000000000000000000000000000000];
+    // Who can adjust allocations for operators inside networks
+    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0x0000000000000000000000000000000000000000];
+    // Operators addresses
+    address[] OPERATORS = [0x0000000000000000000000000000000000000000];
+    // Operators shares
+    uint256[] OPERATORS_SHARES = [1e18];
     // Whether to deploy a slasher
-    bool WITH_SLASHER = false;
+    bool WITH_SLASHER = true;
     // Type of the slasher:
     //  0. Slasher (allows instant slashing)
     //  1. VetoSlasher (allows having a veto period if the resolver is set)
@@ -61,19 +55,17 @@ contract DeployNetworkAndVault is Script {
     uint256 DEPOSIT_LIMIT = 0;
     // Addresses of the whitelisted depositors
     address[] WHITELISTED_DEPOSITORS = new address[](0);
+    // Network limit
+    uint256 public NETWORK_LIMIT = type(uint256).max;
     // Address of the hook contract which, e.g., can automatically adjust the allocations on slashing events (not used in case of no slasher)
     address HOOK = 0x0000000000000000000000000000000000000000;
     // Delay in epochs for a network to update a resolver
     uint48 RESOLVER_SET_EPOCHS_DELAY = 3;
-    // Network limit
-    uint256 public NETWORK_LIMIT = type(uint256).max;
-    // opertator shares for NetworkRestakeDelegator
-    uint256 public OPERATOR_SHARE = 1e18;
 
     // ============ NETWORK CONFIGURATION ============
 
     // Network name
-    string public NETWORK_NAME = "My Symbiotic Network";
+    string public NETWORK_NAME = "My Network";
     // Default minimum delay (will be applied for any action that doesn't have a specific delay yet)
     uint256 DEFAULT_MIN_DELAY = 3 days;
     // Cold actions delay (a delay that will be applied for major actions like upgradeProxy and setMiddleware)
@@ -82,9 +74,9 @@ contract DeployNetworkAndVault is Script {
     uint256 HOT_ACTIONS_DELAY = 0;
     // Admin address (will become executor, proposer, and default admin by default)
     address NETWORK_ADMIN = 0x0000000000000000000000000000000000000000;
-    // Maximum amount of delegation that network is ready to receive (multiple vaults can be set)
+    // Maximum amount of delegation that network is ready to receive
     uint256 MAX_NETWORK_LIMIT = type(uint256).max;
-    // Resolver address (optional, is applied only if VetoSlasher is used) (multiple vaults can be set)
+    // Resolver address (optional, is applied only if VetoSlasher is used)
     address RESOLVER = 0x0000000000000000000000000000000000000000;
 
     // Optional
@@ -94,7 +86,7 @@ contract DeployNetworkAndVault is Script {
     // Metadata URI of the Network
     string METADATA_URI = "";
     // Salt for deterministic deployment
-    bytes11 SALT = "SymNitwork";
+    bytes11 SALT = "SymNetwork";
 
     // ============ INTERNAL VARIABLES ============
 
@@ -104,8 +96,7 @@ contract DeployNetworkAndVault is Script {
     function run() public {
         (address vault, address delegator,) = _deployVault();
         address network = _deployNetwork(vault);
-        _updateDelegatorParams(network, delegator);
-        _checkRoles(delegator);
+        _optInVaultToNetwork(network, delegator);
 
         console2.log("Deployment completed successfully!");
         console2.log("Vault address:", vault);
@@ -116,14 +107,14 @@ contract DeployNetworkAndVault is Script {
         console2.log("Deploying vault...");
         (,, address deployer) = vm.readCallers();
 
-        _isDeployerNetworkAllocationSetter = _contains(NETWORK_ALLOCATION_SETTERS_OR_NETWORK, deployer);
+        _isDeployerNetworkAllocationSetter = _contains(NETWORK_LIMIT_SET_ROLE_HOLDERS, deployer);
         if (!_isDeployerNetworkAllocationSetter) {
-            NETWORK_ALLOCATION_SETTERS_OR_NETWORK.push(deployer);
+            NETWORK_LIMIT_SET_ROLE_HOLDERS.push(deployer);
         }
 
-        _isDeployerOperatorAllocationSetter = _contains(OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR, deployer);
+        _isDeployerOperatorAllocationSetter = _contains(OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS, deployer);
         if (!_isDeployerOperatorAllocationSetter) {
-            OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR.push(deployer);
+            OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS.push(deployer);
         }
 
         DeployVaultBase.DeployVaultParams memory deployVaultParams = DeployVaultBase.DeployVaultParams({
@@ -151,8 +142,8 @@ contract DeployNetworkAndVault is Script {
                     hook: HOOK,
                     hookSetRoleHolder: VAULT_OWNER
                 }),
-                networkAllocationSettersOrNetwork: NETWORK_ALLOCATION_SETTERS_OR_NETWORK,
-                operatorAllocationSettersOrOperator: OPERATOR_ALLOCATION_SETTERS_OR_OPERATOR
+                networkAllocationSettersOrNetwork: NETWORK_LIMIT_SET_ROLE_HOLDERS,
+                operatorAllocationSettersOrOperator: OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS
             }),
             withSlasher: WITH_SLASHER,
             slasherIndex: SLASHER_INDEX,
@@ -210,14 +201,18 @@ contract DeployNetworkAndVault is Script {
         return deployNetworkForVaultsBase.run(deployNetworkParams);
     }
 
-    function _updateDelegatorParams(address network, address delegator) internal {
+    function _optInVaultToNetwork(address network, address delegator) internal {
+        console2.log("Opting-in vault to network...");
+
         (,, address deployer) = vm.readCallers();
 
         vm.startBroadcast();
         bytes32 subnetwork = address(network).subnetwork(SUBNETWORK_ID);
 
         NetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
-        NetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATOR, OPERATOR_SHARE);
+        for (uint256 i; i < OPERATORS.length; ++i) {
+            NetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATORS[i], OPERATORS_SHARES[i]);
+        }
 
         if (!_isDeployerNetworkAllocationSetter) {
             NetworkRestakeDelegator(delegator).renounceRole(
@@ -230,13 +225,6 @@ contract DeployNetworkAndVault is Script {
             );
         }
 
-        vm.stopBroadcast();
-    }
-
-    function _checkRoles(
-        address delegator
-    ) internal {
-        (,, address deployer) = vm.readCallers();
         if (!_isDeployerNetworkAllocationSetter) {
             assert(
                 NetworkRestakeDelegator(delegator).hasRole(
@@ -251,14 +239,15 @@ contract DeployNetworkAndVault is Script {
                 ) == false
             );
         }
+
+        vm.stopBroadcast();
     }
 
     function _contains(address[] memory array, address element) internal pure returns (bool) {
-        for (uint256 i = 0; i < array.length; i++) {
+        for (uint256 i; i < array.length; ++i) {
             if (array[i] == element) {
                 return true;
             }
         }
-        return false;
     }
 }

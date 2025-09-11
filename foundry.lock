@@ -2,13 +2,7 @@
   "lib/core": {
     "branch": {
       "name": "script-updates",
-      "rev": "71aa254fabe26eb93a0e43833c9cd2fe01def64d"
-    }
-  },
-  "lib/createx": {
-    "tag": {
-      "name": "v1.0.0",
-      "rev": "cbac803268835138f86a69bfe01fcf05a50e0447"
+      "rev": "dd3c905d0e4c20004f4a412e65d8053da41a2483"
     }
   },
   "lib/forge-std": {

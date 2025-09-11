@@ -1,6 +1,4 @@
-@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+lib/network:@openzeppelin/contracts/=lib/network/lib/openzeppelin-contracts/contracts
+lib/network:@openzeppelin/contracts-upgradeable/=lib/network/lib/openzeppelin-contracts-upgradeable/contracts
 @symbioticfi/core/=lib/core/
 @symbioticfi/network/=lib/network/
-@createx/=lib/createx/src
-forge-std/=lib/forge-std/src/
