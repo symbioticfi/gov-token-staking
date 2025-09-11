@@ -83,7 +83,7 @@ contract DeployNetworkAndVault is Script {
     // Admin address (will become executor, proposer, and default admin by default)
     address NETWORK_ADMIN = 0x0000000000000000000000000000000000000000;
     // Maximum amount of delegation that network is ready to receive (multiple vaults can be set)
-    uint256 MAX_NETWORK_LIMIT = 0;
+    uint256 MAX_NETWORK_LIMIT = type(uint256).max;
     // Resolver address (optional, is applied only if VetoSlasher is used) (multiple vaults can be set)
     address RESOLVER = 0x0000000000000000000000000000000000000000;
 
@@ -94,7 +94,7 @@ contract DeployNetworkAndVault is Script {
     // Metadata URI of the Network
     string METADATA_URI = "";
     // Salt for deterministic deployment
-    bytes11 SALT = "SymNetwork";
+    bytes11 SALT = "SymNitwork";
 
     // ============ INTERNAL VARIABLES ============
 
@@ -163,8 +163,8 @@ contract DeployNetworkAndVault is Script {
             })
         });
 
-        DeployVaultBase vaultDeployer = new DeployVaultBase(deployVaultParams);
-        return vaultDeployer.run();
+        DeployVaultBase vaultDeployer = new DeployVaultBase();
+        return vaultDeployer.run(deployVaultParams);
     }
 
     function _deployNetwork(

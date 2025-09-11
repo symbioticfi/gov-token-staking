@@ -2,7 +2,7 @@
   "lib/core": {
     "branch": {
       "name": "script-updates",
-      "rev": "1e10faf03b1a507869d7f5e76858459a747e6349"
+      "rev": "71aa254fabe26eb93a0e43833c9cd2fe01def64d"
     }
   },
   "lib/createx": {
