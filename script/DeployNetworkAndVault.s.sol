@@ -24,7 +24,7 @@ contract DeployNetworkAndVault is Script {
 
     // ============ VAULT CONFIGURATION ============
 
-    // Vault owner address
+    // Address of the owner of the vault who can migrate the vault to new versions whitelisted by Symbiotic
     address public VAULT_OWNER = 0x0000000000000000000000000000000000000000;
     // Address of the collateral token
     address COLLATERAL = 0x0000000000000000000000000000000000000000;

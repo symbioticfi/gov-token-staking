@@ -2,7 +2,7 @@
   "lib/core": {
     "branch": {
       "name": "script-updates",
-      "rev": "dd3c905d0e4c20004f4a412e65d8053da41a2483"
+      "rev": "e0c9fa7221b34546c218be323ccc78728f01d5df"
     }
   },
   "lib/forge-std": {
