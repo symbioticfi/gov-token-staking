@@ -14,12 +14,12 @@ import {IBaseSlasher} from "@symbioticfi/core/src/interfaces/slasher/IBaseSlashe
 import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
 
 /**
- * @title DeployNetworkAndVault
+ * @title DeployGovTokenStaking
  * @notice Comprehensive deployment script that deploys both a vault and network
  * @dev This script combines VaultBase and DeployNetworkForVaultsBase to create
  *      a complete deployment solution for the Symbiotic protocol
  */
-contract DeployNetworkAndVault is Script {
+contract DeployGovTokenStaking is Script {
     using Subnetwork for address;
 
     // ============ VAULT CONFIGURATION ============
@@ -104,6 +104,7 @@ contract DeployNetworkAndVault is Script {
     }
 
     function _deployVault() internal returns (address, address, address) {
+        vm.startBroadcast();
         console2.log("Deploying vault...");
         (,, address deployer) = vm.readCallers();
 
@@ -148,12 +149,12 @@ contract DeployNetworkAndVault is Script {
             withSlasher: WITH_SLASHER,
             slasherIndex: SLASHER_INDEX,
             slasherParams: DeployVaultBase.SlasherParams({
-                baseParams: IBaseSlasher.BaseParams({isBurnerHook: false}),
+                baseParams: IBaseSlasher.BaseParams({isBurnerHook: BURNER != address(0)}),
                 vetoDuration: VETO_DURATION,
                 resolverSetEpochsDelay: RESOLVER_SET_EPOCHS_DELAY
             })
         });
-
+        vm.stopBroadcast();
         DeployVaultBase vaultDeployer = new DeployVaultBase();
         return vaultDeployer.run(deployVaultParams);
     }
@@ -161,6 +162,7 @@ contract DeployNetworkAndVault is Script {
     function _deployNetwork(
         address vault
     ) internal returns (address) {
+        vm.startBroadcast();
         console2.log("Deploying network...");
         address[] memory proposers = new address[](1);
         proposers[0] = NETWORK_ADMIN;
@@ -195,18 +197,17 @@ contract DeployNetworkAndVault is Script {
             resolvers: resolvers,
             subnetworkId: SUBNETWORK_ID
         });
-
+        vm.stopBroadcast();
         DeployNetworkForVaultsBase deployNetworkForVaultsBase = new DeployNetworkForVaultsBase();
-
         return deployNetworkForVaultsBase.run(deployNetworkParams);
     }
 
     function _optInVaultToNetwork(address network, address delegator) internal {
+        vm.startBroadcast();
         console2.log("Opting-in vault to network...");
 
         (,, address deployer) = vm.readCallers();
 
-        vm.startBroadcast();
         bytes32 subnetwork = address(network).subnetwork(SUBNETWORK_ID);
 
         NetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
@@ -239,7 +240,6 @@ contract DeployNetworkAndVault is Script {
                 ) == false
             );
         }
-
         vm.stopBroadcast();
     }
 
