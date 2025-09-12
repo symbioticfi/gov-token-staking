@@ -2,3 +2,4 @@ lib/network:@openzeppelin/contracts/=lib/network/lib/openzeppelin-contracts/cont
 lib/network:@openzeppelin/contracts-upgradeable/=lib/network/lib/openzeppelin-contracts-upgradeable/contracts
 @symbioticfi/core/=lib/core/
 @symbioticfi/network/=lib/network/
+forge-std/=lib/forge-std/src/

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import {Script, console2} from "lib/forge-std/src/Script.sol";
+import {Script, console2} from "forge-std/Script.sol";
 
 import {DeployNetworkForVaultsBase} from "@symbioticfi/network/script/base/DeployNetworkForVaultsBase.sol";
 import {DeployNetworkBase} from "@symbioticfi/network/script/base/DeployNetworkBase.sol";
-
-import {NetworkRestakeDelegator} from "@symbioticfi/core/src/contracts/delegator/NetworkRestakeDelegator.sol";
 import {DeployVaultBase} from "@symbioticfi/core/script/base/DeployVaultBase.sol";
+
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
 import {IBaseSlasher} from "@symbioticfi/core/src/interfaces/slasher/IBaseSlasher.sol";
@@ -210,33 +211,32 @@ contract DeployGovTokenStaking is Script {
 
         bytes32 subnetwork = address(network).subnetwork(SUBNETWORK_ID);
 
-        NetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
+        INetworkRestakeDelegator(delegator).setNetworkLimit(subnetwork, NETWORK_LIMIT);
         for (uint256 i; i < OPERATORS.length; ++i) {
-            NetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATORS[i], OPERATORS_SHARES[i]);
+            INetworkRestakeDelegator(delegator).setOperatorNetworkShares(subnetwork, OPERATORS[i], OPERATORS_SHARES[i]);
         }
 
         if (!_isDeployerNetworkAllocationSetter) {
-            NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
+            AccessControl(delegator).renounceRole(
+                INetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
             );
         }
         if (!_isDeployerOperatorAllocationSetter) {
-            NetworkRestakeDelegator(delegator).renounceRole(
-                NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
+            AccessControl(delegator).renounceRole(
+                INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
             );
         }
 
         if (!_isDeployerNetworkAllocationSetter) {
             assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
-                ) == false
+                AccessControl(delegator).hasRole(INetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer)
+                    == false
             );
         }
         if (!_isDeployerOperatorAllocationSetter) {
             assert(
-                NetworkRestakeDelegator(delegator).hasRole(
-                    NetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
+                AccessControl(delegator).hasRole(
+                    INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
                 ) == false
             );
         }
