@@ -126,3 +126,25 @@ Deployment completed successfully!
   Vault address: 0xDc4BD9548f09e93BCe776AB8E4C9500854C5B9c6
   Network address: 0xC1989b8395671DbAbDaB8F574532876eD6e50924
 ```
+
+### Examples
+
+#### Deploy for CCIP
+
+1. Deploy LINK Vault
+2. Deploy Lombard CCIP Network and opt-in it to the Vault
+3. Opt-in LINK Vault to the Network
+4. Opt-in Network to BARD Vault
+
+```bash
+forge script script/examples/DeployForCCIP.s.sol --rpc-url <RPC_URL> --ledger --etherscan-api-key <ETHERSCAN_API_KEY> --broadcast --verify
+```
+
+#### Transfer Roles
+
+1. Transfer Vault roles
+2. Transfer Network roles
+
+```bash
+forge script script/examples/TransferRolesCCIP.s.sol --rpc-url <RPC_URL> --ledger --broadcast
+```
