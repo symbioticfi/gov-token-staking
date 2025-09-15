@@ -9,19 +9,11 @@ import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegat
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {Network} from "@symbioticfi/network/src/Network.sol";
 
-contract TransferRolesCCIP is Script {
-    address VAULT = 0x392F4B37C1Fe52D0c1A88C4C61218aD3d2A8a977; // TODO
+contract TransferVaultRoles is Script {
+    address VAULT = 0xD538A11e421449F2BAFA153F678C81E7a4f411B3; // TODO
     address VAULT_ADMIN = 0xD702F6Ba48CAb40607B6409aA07Fe9CFBc42364c;
 
-    address payable NETWORK = payable(0xCe5677d5FB2BC7F501abB251DFbfB53DB3B2170b); // TODO
-    address NETWORK_ADMIN = 0xD0AaD4982359E6A040751D0f9253C0a09000Caf8;
-
     function run() public {
-        _transferVaultRoles();
-        _transferNetworkRoles();
-    }
-
-    function _transferVaultRoles() internal {
         vm.startBroadcast();
 
         (,, address deployer) = vm.readCallers();
@@ -89,41 +81,7 @@ contract TransferRolesCCIP is Script {
 
         assert(Ownable(VAULT).owner() == address(0));
 
-        vm.stopBroadcast();
-    }
-
-    function _transferNetworkRoles() internal {
-        vm.startBroadcast();
-
-        (,, address deployer) = vm.readCallers();
-
-        Network(NETWORK).grantRole(Network(NETWORK).DEFAULT_ADMIN_ROLE(), NETWORK_ADMIN);
-        Network(NETWORK).grantRole(Network(NETWORK).PROPOSER_ROLE(), NETWORK_ADMIN);
-        Network(NETWORK).grantRole(Network(NETWORK).EXECUTOR_ROLE(), NETWORK_ADMIN);
-        Network(NETWORK).grantRole(Network(NETWORK).CANCELLER_ROLE(), NETWORK_ADMIN);
-        Network(NETWORK).grantRole(Network(NETWORK).NAME_UPDATE_ROLE(), NETWORK_ADMIN);
-        Network(NETWORK).grantRole(Network(NETWORK).METADATA_URI_UPDATE_ROLE(), NETWORK_ADMIN);
-
-        Network(NETWORK).renounceRole(Network(NETWORK).DEFAULT_ADMIN_ROLE(), deployer);
-        Network(NETWORK).renounceRole(Network(NETWORK).PROPOSER_ROLE(), deployer);
-        Network(NETWORK).renounceRole(Network(NETWORK).EXECUTOR_ROLE(), deployer);
-        Network(NETWORK).renounceRole(Network(NETWORK).CANCELLER_ROLE(), deployer);
-        Network(NETWORK).renounceRole(Network(NETWORK).NAME_UPDATE_ROLE(), deployer);
-        Network(NETWORK).renounceRole(Network(NETWORK).METADATA_URI_UPDATE_ROLE(), deployer);
-
-        assert(Network(NETWORK).hasRole(Network(NETWORK).DEFAULT_ADMIN_ROLE(), NETWORK_ADMIN) == true);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).PROPOSER_ROLE(), NETWORK_ADMIN) == true);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).EXECUTOR_ROLE(), NETWORK_ADMIN) == true);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).CANCELLER_ROLE(), NETWORK_ADMIN) == true);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).NAME_UPDATE_ROLE(), NETWORK_ADMIN) == true);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).METADATA_URI_UPDATE_ROLE(), NETWORK_ADMIN) == true);
-
-        assert(Network(NETWORK).hasRole(Network(NETWORK).DEFAULT_ADMIN_ROLE(), deployer) == false);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).PROPOSER_ROLE(), deployer) == false);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).EXECUTOR_ROLE(), deployer) == false);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).CANCELLER_ROLE(), deployer) == false);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).NAME_UPDATE_ROLE(), deployer) == false);
-        assert(Network(NETWORK).hasRole(Network(NETWORK).METADATA_URI_UPDATE_ROLE(), deployer) == false);
+        console2.log("Vault roles transferred successfully!");
 
         vm.stopBroadcast();
     }

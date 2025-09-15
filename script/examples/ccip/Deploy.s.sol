@@ -15,34 +15,29 @@ import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDe
 import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
 
 /**
- * @title DeployForCCIP
+ * @title Deploy
  * @notice Comprehensive deployment script that deploys both a vault and network
  *         Also, opt-ins the network to a second vault
  */
-contract DeployForCCIP is Script {
+contract Deploy is Script {
     using Subnetwork for address;
 
     // ============ VAULT CONFIGURATION ============
 
     // Address of the owner of the vault who can migrate the vault to new versions whitelisted by Symbiotic
-    address public VAULT_OWNER = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38; // TODO
+    address public VAULT_OWNER = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA; // TODO
     // Address of the collateral token
     address COLLATERAL = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     // Duration of the vault epoch (the withdrawal delay for staker varies from EPOCH_DURATION to 2 * EPOCH_DURATION depending on when the withdrawal is requested)
     uint48 EPOCH_DURATION = 7 days;
     // Who can adjust allocations for networks
-    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38]; // TODO
+    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA]; // TODO
     // Who can adjust allocations for operators inside networks
-    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38]; // TODO
+    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA]; // TODO
     // Operators addresses
     address[] OPERATORS = [0xe40C10408Eb0682B52510ad8C144fC13eC59d925]; // TODO
     // Operators shares
     uint256[] OPERATORS_SHARES = [1e18];
-
-    // Optional
-
-    // Deposit limit (maximum amount of the active stake allowed in the vault)
-    uint256 DEPOSIT_LIMIT = 4_060_000 * 1e18; // TODO
     // Network limit
     uint256 public NETWORK_LIMIT = type(uint256).max;
 
@@ -51,29 +46,21 @@ contract DeployForCCIP is Script {
     // Network name
     string public NETWORK_NAME = "Lombard CCIP Network";
     // Default minimum delay (will be applied for any action that doesn't have a specific delay yet)
-    uint256 DEFAULT_MIN_DELAY = 3 days;
+    uint256 DEFAULT_MIN_DELAY = 0;
     // Cold actions delay (a delay that will be applied for major actions like upgradeProxy and setMiddleware)
-    uint256 COLD_ACTIONS_DELAY = 21 days;
+    uint256 COLD_ACTIONS_DELAY = 0;
     // Hot actions delay (a delay that will be applied for minor actions like setMaxNetworkLimit and setResolver)
     uint256 HOT_ACTIONS_DELAY = 0;
     // Admin address (will become executor, proposer, and default admin by default)
-    address NETWORK_ADMIN = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38; // TODO
+    address NETWORK_ADMIN = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA; // TODO
     // Maximum amount of delegation that network is ready to receive
     uint256 MAX_NETWORK_LIMIT = type(uint256).max;
-
-    // Optional
-
     // Subnetwork Identifier (multiple subnetworks can be used, e.g., to have different resolvers for the same network)
     uint96 SUBNETWORK_ID = 0;
     // Metadata URI of the Network
     string METADATA_URI = "";
     // Salt for deterministic deployment
     bytes11 SALT = "LCCIPNet";
-
-    // ============ SECOND VAULT OPT-IN CONFIGURATION ============
-
-    address SECOND_VAULT = 0x7b276aAD6D2ebfD7e270C5a2697ac79182D9550E; // TODO
-    uint256 SECOND_VAULT_MAX_NETWORK_LIMIT = 20_000_000 * 1e18;
 
     // ============ INTERNAL VARIABLES ============
 
@@ -88,10 +75,6 @@ contract DeployForCCIP is Script {
         console2.log("Deployment completed successfully!");
         console2.log("Vault address:", vault);
         console2.log("Network address:", network);
-
-        _optInNetworkToSecondVault(network);
-
-        console2.log("Opt-in to second vault completed successfully!");
     }
 
     function _deployVault() internal returns (address, address, address) {
@@ -118,8 +101,8 @@ contract DeployForCCIP is Script {
                     burner: address(0),
                     epochDuration: EPOCH_DURATION,
                     depositWhitelist: false,
-                    isDepositLimit: DEPOSIT_LIMIT > 0,
-                    depositLimit: DEPOSIT_LIMIT,
+                    isDepositLimit: true,
+                    depositLimit: 0,
                     defaultAdminRoleHolder: VAULT_OWNER,
                     depositWhitelistSetRoleHolder: address(0),
                     depositorWhitelistRoleHolder: address(0),
@@ -228,22 +211,6 @@ contract DeployForCCIP is Script {
             );
         }
         vm.stopBroadcast();
-    }
-
-    function _optInNetworkToSecondVault(
-        address network
-    ) internal {
-        SetMaxNetworkLimitBase setMaxNetworkLimitScheduler = new SetMaxNetworkLimitBase(
-            SetMaxNetworkLimitBase.SetMaxNetworkLimitParams({
-                network: network,
-                vault: SECOND_VAULT,
-                subnetworkId: SUBNETWORK_ID,
-                maxNetworkLimit: SECOND_VAULT_MAX_NETWORK_LIMIT,
-                delay: 0,
-                salt: SALT
-            })
-        );
-        setMaxNetworkLimitScheduler.runScheduleAndExecute();
     }
 
     function _contains(address[] memory array, address element) internal pure returns (bool) {
