@@ -25,17 +25,17 @@ contract Deploy is Script {
     // ============ VAULT CONFIGURATION ============
 
     // Address of the owner of the vault who can migrate the vault to new versions whitelisted by Symbiotic
-    address public VAULT_OWNER = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA; // TODO
+    address public VAULT_OWNER = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA;
     // Address of the collateral token
     address COLLATERAL = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     // Duration of the vault epoch (the withdrawal delay for staker varies from EPOCH_DURATION to 2 * EPOCH_DURATION depending on when the withdrawal is requested)
     uint48 EPOCH_DURATION = 7 days;
     // Who can adjust allocations for networks
-    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA]; // TODO
+    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA];
     // Who can adjust allocations for operators inside networks
-    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA]; // TODO
+    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA];
     // Operators addresses
-    address[] OPERATORS = [0xe40C10408Eb0682B52510ad8C144fC13eC59d925]; // TODO
+    address[] OPERATORS = [0x815eD3e4c7660CE138Bc44ad7E638f23A50AeC5B];
     // Operators shares
     uint256[] OPERATORS_SHARES = [1e18];
     // Network limit
@@ -52,7 +52,7 @@ contract Deploy is Script {
     // Hot actions delay (a delay that will be applied for minor actions like setMaxNetworkLimit and setResolver)
     uint256 HOT_ACTIONS_DELAY = 0;
     // Admin address (will become executor, proposer, and default admin by default)
-    address NETWORK_ADMIN = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA; // TODO
+    address NETWORK_ADMIN = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA;
     // Maximum amount of delegation that network is ready to receive
     uint256 MAX_NETWORK_LIMIT = type(uint256).max;
     // Subnetwork Identifier (multiple subnetworks can be used, e.g., to have different resolvers for the same network)

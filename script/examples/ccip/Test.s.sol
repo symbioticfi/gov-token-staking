@@ -11,7 +11,6 @@ import {TransferNetworkRoles} from "./TransferNetworkRoles.s.sol";
 
 contract Test is Script {
     function run() public {
-        (new Deploy()).run();
         (new SetDepositLimit()).run();
         (new TransferVaultRoles()).run();
         (new OptIntoVault()).run();

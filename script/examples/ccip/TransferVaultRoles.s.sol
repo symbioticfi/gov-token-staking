@@ -10,7 +10,7 @@ import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {Network} from "@symbioticfi/network/src/Network.sol";
 
 contract TransferVaultRoles is Script {
-    address VAULT = 0xD538A11e421449F2BAFA153F678C81E7a4f411B3; // TODO
+    address VAULT = 0xD538A11e421449F2BAFA153F678C81E7a4f411B3;
     address VAULT_ADMIN = 0xD702F6Ba48CAb40607B6409aA07Fe9CFBc42364c;
 
     function run() public {

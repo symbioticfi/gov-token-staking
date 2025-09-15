@@ -6,8 +6,8 @@ import {Script, console2} from "forge-std/Script.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 
 contract SetDepositLimit is Script {
-    address VAULT = 0xD538A11e421449F2BAFA153F678C81E7a4f411B3; // TODO
-    uint256 DEPOSIT_LIMIT = 4_060_000 * 1e18; // TODO
+    address VAULT = 0xD538A11e421449F2BAFA153F678C81E7a4f411B3;
+    uint256 DEPOSIT_LIMIT = 4_275_000 * 1e18; // TODO
 
     function run() public {
         vm.startBroadcast();

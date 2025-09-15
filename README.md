@@ -139,19 +139,19 @@ Deployment completed successfully!
 4. Opt-in Network to BARD Vault
 
 ```bash
-forge script script/examples/Deploy.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --etherscan-api-key <ETHERSCAN_API_KEY> --broadcast --verify
+forge script script/examples/ccip/Deploy.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --etherscan-api-key <ETHERSCAN_API_KEY> --broadcast --verify
 ```
 
 ##### Set deposit limit
 
 ```bash
-forge script script/examples/SetDepositLimit.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+forge script script/examples/ccip/SetDepositLimit.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
 ```
 
 ##### Opt into vault
 
 ```bash
-forge script script/examples/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+forge script script/examples/ccip/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
 ```
 
 ##### Transfer Vault Roles
