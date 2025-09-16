@@ -148,16 +148,16 @@ forge script script/examples/ccip/Deploy.s.sol --rpc-url https://mainnet.gateway
 forge script script/examples/ccip/SetDepositLimit.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
 ```
 
-##### Opt into vault
-
-```bash
-forge script script/examples/ccip/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
-```
-
 ##### Transfer Vault Roles
 
 ```bash
 forge script script/examples/ccip/TransferVaultRoles.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+##### Opt into vault
+
+```bash
+forge script script/examples/ccip/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
 ```
 
 ##### Transfer Network Roles

@@ -10,7 +10,7 @@ contract OptIntoVault is Script {
     uint96 SUBNETWORK_ID = 0;
     bytes11 SALT = "LCCIPNet";
 
-    address SECOND_VAULT = 0x7b276aAD6D2ebfD7e270C5a2697ac79182D9550E; // TODO
+    address SECOND_VAULT = 0x34beb65E41F6f0A36275Fe85F4f4574CE9237231;
     uint256 SECOND_VAULT_MAX_NETWORK_LIMIT = 20_000_000 * 1e18;
 
     function run() public {
