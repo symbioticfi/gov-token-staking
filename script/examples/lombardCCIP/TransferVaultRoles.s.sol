@@ -32,15 +32,13 @@ contract TransferVaultRoles is Script {
 
         AccessControl(DELEGATOR).grantRole(AccessControl(DELEGATOR).DEFAULT_ADMIN_ROLE(), VAULT_ADMIN);
         AccessControl(DELEGATOR).grantRole(INetworkRestakeDelegator(DELEGATOR).NETWORK_LIMIT_SET_ROLE(), VAULT_ADMIN);
-        AccessControl(DELEGATOR).grantRole(
-            INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_ADMIN
-        );
+        AccessControl(DELEGATOR)
+            .grantRole(INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_ADMIN);
 
         AccessControl(DELEGATOR).renounceRole(AccessControl(DELEGATOR).DEFAULT_ADMIN_ROLE(), deployer);
         AccessControl(DELEGATOR).renounceRole(INetworkRestakeDelegator(DELEGATOR).NETWORK_LIMIT_SET_ROLE(), deployer);
-        AccessControl(DELEGATOR).renounceRole(
-            INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
-        );
+        AccessControl(DELEGATOR)
+            .renounceRole(INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer);
         AccessControl(DELEGATOR).renounceRole(INetworkRestakeDelegator(DELEGATOR).HOOK_SET_ROLE(), deployer);
 
         assert(AccessControl(VAULT).hasRole(AccessControl(VAULT).DEFAULT_ADMIN_ROLE(), VAULT_ADMIN) == true);
@@ -54,9 +52,8 @@ contract TransferVaultRoles is Script {
                 == true
         );
         assert(
-            AccessControl(DELEGATOR).hasRole(
-                INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_ADMIN
-            ) == true
+            AccessControl(DELEGATOR)
+                .hasRole(INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), VAULT_ADMIN) == true
         );
         assert(
             AccessControl(DELEGATOR).hasRole(INetworkRestakeDelegator(DELEGATOR).HOOK_SET_ROLE(), VAULT_ADMIN) == false
@@ -73,9 +70,8 @@ contract TransferVaultRoles is Script {
                 == false
         );
         assert(
-            AccessControl(DELEGATOR).hasRole(
-                INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
-            ) == false
+            AccessControl(DELEGATOR)
+                .hasRole(INetworkRestakeDelegator(DELEGATOR).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer) == false
         );
         assert(AccessControl(DELEGATOR).hasRole(INetworkRestakeDelegator(DELEGATOR).HOOK_SET_ROLE(), deployer) == false);
 

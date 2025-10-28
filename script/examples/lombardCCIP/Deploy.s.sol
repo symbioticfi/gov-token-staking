@@ -5,7 +5,6 @@ import {Script, console2} from "forge-std/Script.sol";
 
 import {DeployNetworkForVaultsBase} from "@symbioticfi/network/script/base/DeployNetworkForVaultsBase.sol";
 import {DeployNetworkBase} from "@symbioticfi/network/script/base/DeployNetworkBase.sol";
-import {SetMaxNetworkLimitBase} from "@symbioticfi/network/script/actions/base/SetMaxNetworkLimitBase.sol";
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
@@ -114,9 +113,7 @@ contract Deploy is Script {
             delegatorIndex: 0, // NetworkRestakeDelegator
             delegatorParams: DeployVaultBase.DelegatorParams({
                 baseParams: IBaseDelegator.BaseParams({
-                    defaultAdminRoleHolder: VAULT_OWNER,
-                    hook: address(0),
-                    hookSetRoleHolder: address(0)
+                    defaultAdminRoleHolder: VAULT_OWNER, hook: address(0), hookSetRoleHolder: address(0)
                 }),
                 networkAllocationSettersOrNetwork: NETWORK_LIMIT_SET_ROLE_HOLDERS,
                 operatorAllocationSettersOrOperator: OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS
@@ -146,34 +143,37 @@ contract Deploy is Script {
         address[] memory resolvers = new address[](1);
         resolvers[0] = address(0);
 
-        DeployNetworkForVaultsBase.DeployNetworkForVaultsParams memory deployNetworkParams = DeployNetworkForVaultsBase
-            .DeployNetworkForVaultsParams({
-            deployNetworkParams: DeployNetworkBase.DeployNetworkParams({
-                name: NETWORK_NAME,
-                metadataURI: METADATA_URI,
-                proposers: proposers,
-                executors: executors,
-                defaultAdminRoleHolder: NETWORK_ADMIN,
-                nameUpdateRoleHolder: NETWORK_ADMIN,
-                metadataURIUpdateRoleHolder: NETWORK_ADMIN,
-                globalMinDelay: DEFAULT_MIN_DELAY,
-                upgradeProxyMinDelay: COLD_ACTIONS_DELAY,
-                setMiddlewareMinDelay: COLD_ACTIONS_DELAY,
-                setMaxNetworkLimitMinDelay: HOT_ACTIONS_DELAY,
-                setResolverMinDelay: HOT_ACTIONS_DELAY,
-                salt: SALT
-            }),
-            vaults: vaults,
-            maxNetworkLimits: maxNetworkLimits,
-            resolvers: resolvers,
-            subnetworkId: SUBNETWORK_ID
-        });
+        DeployNetworkForVaultsBase.DeployNetworkForVaultsParams memory deployNetworkParams =
+            DeployNetworkForVaultsBase.DeployNetworkForVaultsParams({
+                deployNetworkParams: DeployNetworkBase.DeployNetworkParams({
+                    name: NETWORK_NAME,
+                    metadataURI: METADATA_URI,
+                    proposers: proposers,
+                    executors: executors,
+                    defaultAdminRoleHolder: NETWORK_ADMIN,
+                    nameUpdateRoleHolder: NETWORK_ADMIN,
+                    metadataURIUpdateRoleHolder: NETWORK_ADMIN,
+                    globalMinDelay: DEFAULT_MIN_DELAY,
+                    upgradeProxyMinDelay: COLD_ACTIONS_DELAY,
+                    setMiddlewareMinDelay: COLD_ACTIONS_DELAY,
+                    setMaxNetworkLimitMinDelay: HOT_ACTIONS_DELAY,
+                    setResolverMinDelay: HOT_ACTIONS_DELAY,
+                    salt: SALT
+                }),
+                vaults: vaults,
+                maxNetworkLimits: maxNetworkLimits,
+                resolvers: resolvers,
+                subnetworkId: SUBNETWORK_ID
+            });
         vm.stopBroadcast();
         DeployNetworkForVaultsBase deployNetworkForVaultsBase = new DeployNetworkForVaultsBase();
         return deployNetworkForVaultsBase.run(deployNetworkParams);
     }
 
-    function _optInVaultToNetwork(address network, address delegator) internal {
+    function _optInVaultToNetwork(
+        address network,
+        address delegator
+    ) internal {
         vm.startBroadcast();
         console2.log("Opting-in vault to network...");
 
@@ -187,14 +187,12 @@ contract Deploy is Script {
         }
 
         if (!_isDeployerNetworkAllocationSetter) {
-            AccessControl(delegator).renounceRole(
-                INetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer
-            );
+            AccessControl(delegator)
+                .renounceRole(INetworkRestakeDelegator(delegator).NETWORK_LIMIT_SET_ROLE(), deployer);
         }
         if (!_isDeployerOperatorAllocationSetter) {
-            AccessControl(delegator).renounceRole(
-                INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
-            );
+            AccessControl(delegator)
+                .renounceRole(INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer);
         }
 
         if (!_isDeployerNetworkAllocationSetter) {
@@ -205,15 +203,17 @@ contract Deploy is Script {
         }
         if (!_isDeployerOperatorAllocationSetter) {
             assert(
-                AccessControl(delegator).hasRole(
-                    INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer
-                ) == false
+                AccessControl(delegator)
+                    .hasRole(INetworkRestakeDelegator(delegator).OPERATOR_NETWORK_SHARES_SET_ROLE(), deployer) == false
             );
         }
         vm.stopBroadcast();
     }
 
-    function _contains(address[] memory array, address element) internal pure returns (bool) {
+    function _contains(
+        address[] memory array,
+        address element
+    ) internal pure returns (bool) {
         for (uint256 i; i < array.length; ++i) {
             if (array[i] == element) {
                 return true;
