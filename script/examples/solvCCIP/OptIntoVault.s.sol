@@ -6,13 +6,11 @@ import {Script, console2} from "forge-std/Script.sol";
 import {SetMaxNetworkLimitBase} from "@symbioticfi/network/script/actions/base/SetMaxNetworkLimitBase.sol";
 
 contract OptIntoVault is Script {
-    // TODO
-    address NETWORK = 0x769f653c1CD9f2abcBACBfeAaE5C9D8Dc2033Fef;
+    address NETWORK = 0xf02D5A6aDEC0286be3e13886C9C2e782679B6c39;
     uint96 SUBNETWORK_ID = 0;
     bytes11 SALT = "SCCIPNet";
 
-    // TODO
-    address SECOND_VAULT = 0x34beb65E41F6f0A36275Fe85F4f4574CE9237231;
+    address SECOND_VAULT = 0xD01f195f4D3033F25F1DEE614F0DCeD882dBBC56;
     uint256 SECOND_VAULT_MAX_NETWORK_LIMIT = type(uint256).max;
 
     function run() public {

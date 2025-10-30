@@ -6,8 +6,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {Network} from "@symbioticfi/network/src/Network.sol";
 
 contract TransferNetworkRoles is Script {
-    // TODO
-    address payable NETWORK = payable(0x769f653c1CD9f2abcBACBfeAaE5C9D8Dc2033Fef);
+    address payable NETWORK = payable(0xf02D5A6aDEC0286be3e13886C9C2e782679B6c39);
     address NETWORK_ADMIN = 0xD0AaD4982359E6A040751D0f9253C0a09000Caf8;
 
     function run() public {
