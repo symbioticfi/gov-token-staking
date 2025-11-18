@@ -126,3 +126,68 @@ Deployment completed successfully!
   Vault address: 0xDc4BD9548f09e93BCe776AB8E4C9500854C5B9c6
   Network address: 0xC1989b8395671DbAbDaB8F574532876eD6e50924
 ```
+
+### Examples
+
+#### Lombard CCIP
+
+##### Deploy
+
+1. Deploy LINK Vault
+2. Deploy Lombard CCIP Network and opt-in it to the LINK Vault
+3. Opt-in LINK Vault to the Network
+4. Transfer Vault roles
+5. Opt-in Network to BARD Vault
+6. Transfer Network Roles
+
+```bash
+forge script script/examples/ccip/Deploy.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --etherscan-api-key <ETHERSCAN_API_KEY> --broadcast --verify
+```
+
+##### Set deposit limit
+
+```bash
+forge script script/examples/ccip/SetDepositLimit.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+##### Transfer Vault Roles
+
+```bash
+forge script script/examples/ccip/TransferVaultRoles.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+##### Opt into vault
+
+```bash
+forge script script/examples/ccip/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+##### Transfer Network Roles
+
+```bash
+forge script script/examples/ccip/TransferNetworkRoles.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+#### Solv CCIP
+
+##### Deploy
+
+1. Deploy Solv CCIP Network and opt-in it to the LINK Vault
+2. Opt-in Network to SOLV Vault
+3. Transfer Network Roles
+
+```bash
+forge script script/examples/solvCCIP/Deploy.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --etherscan-api-key <ETHERSCAN_API_KEY> --broadcast --verify
+```
+
+##### Opt into vault
+
+```bash
+forge script script/examples/solvCCIP/OptIntoVault.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```
+
+##### Transfer Network Roles
+
+```bash
+forge script script/examples/solvCCIP/TransferNetworkRoles.s.sol --rpc-url https://mainnet.gateway.tenderly.co --ledger --broadcast
+```

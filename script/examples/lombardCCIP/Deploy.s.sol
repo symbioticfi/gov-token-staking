@@ -5,89 +5,61 @@ import {Script, console2} from "forge-std/Script.sol";
 
 import {DeployNetworkForVaultsBase} from "@symbioticfi/network/script/base/DeployNetworkForVaultsBase.sol";
 import {DeployNetworkBase} from "@symbioticfi/network/script/base/DeployNetworkBase.sol";
-import {DeployVaultBase} from "@symbioticfi/core/script/base/DeployVaultBase.sol";
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {INetworkRestakeDelegator} from "@symbioticfi/core/src/interfaces/delegator/INetworkRestakeDelegator.sol";
+import {DeployVaultBase} from "@symbioticfi/core/script/base/DeployVaultBase.sol";
 import {IVault} from "@symbioticfi/core/src/interfaces/vault/IVault.sol";
 import {IBaseDelegator} from "@symbioticfi/core/src/interfaces/delegator/IBaseDelegator.sol";
-import {IBaseSlasher} from "@symbioticfi/core/src/interfaces/slasher/IBaseSlasher.sol";
 import {Subnetwork} from "@symbioticfi/core/src/contracts/libraries/Subnetwork.sol";
 
 /**
- * @title DeployGovTokenStaking
+ * @title Deploy
  * @notice Comprehensive deployment script that deploys both a vault and network
- * @dev This script combines VaultBase and DeployNetworkForVaultsBase to create
- *      a complete deployment solution for the Symbiotic protocol
+ *         Also, opt-ins the network to a second vault
  */
-contract DeployGovTokenStaking is Script {
+contract Deploy is Script {
     using Subnetwork for address;
 
     // ============ VAULT CONFIGURATION ============
 
     // Address of the owner of the vault who can migrate the vault to new versions whitelisted by Symbiotic
-    address public VAULT_OWNER = 0x0000000000000000000000000000000000000000;
+    address public VAULT_OWNER = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA;
     // Address of the collateral token
-    address COLLATERAL = 0x0000000000000000000000000000000000000000;
-    // Vault's burner to send slashed funds to (e.g., 0xdEaD or some unwrapper contract; not used in case of no slasher)
-    address BURNER = 0x000000000000000000000000000000000000dEaD;
+    address COLLATERAL = 0x514910771AF9Ca656af840dff83E8264EcF986CA;
     // Duration of the vault epoch (the withdrawal delay for staker varies from EPOCH_DURATION to 2 * EPOCH_DURATION depending on when the withdrawal is requested)
     uint48 EPOCH_DURATION = 7 days;
     // Who can adjust allocations for networks
-    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0x0000000000000000000000000000000000000000];
+    address[] NETWORK_LIMIT_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA];
     // Who can adjust allocations for operators inside networks
-    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0x0000000000000000000000000000000000000000];
+    address[] OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS = [0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA];
     // Operators addresses
-    address[] OPERATORS = [0x0000000000000000000000000000000000000000];
+    address[] OPERATORS = [0x815eD3e4c7660CE138Bc44ad7E638f23A50AeC5B];
     // Operators shares
     uint256[] OPERATORS_SHARES = [1e18];
-    // Whether to deploy a slasher
-    bool WITH_SLASHER = true;
-    // Type of the slasher:
-    //  0. Slasher (allows instant slashing)
-    //  1. VetoSlasher (allows having a veto period if the resolver is set)
-    uint64 SLASHER_INDEX = 1;
-    // Duration of a veto period (should be less than EPOCH_DURATION)
-    uint48 VETO_DURATION = 1 days;
-
-    // Optional
-
-    // Deposit limit (maximum amount of the active stake allowed in the vault)
-    uint256 DEPOSIT_LIMIT = 0;
-    // Addresses of the whitelisted depositors
-    address[] WHITELISTED_DEPOSITORS = new address[](0);
     // Network limit
     uint256 public NETWORK_LIMIT = type(uint256).max;
-    // Address of the hook contract which, e.g., can automatically adjust the allocations on slashing events (not used in case of no slasher)
-    address HOOK = 0x0000000000000000000000000000000000000000;
-    // Delay in epochs for a network to update a resolver
-    uint48 RESOLVER_SET_EPOCHS_DELAY = 3;
 
     // ============ NETWORK CONFIGURATION ============
 
     // Network name
-    string public NETWORK_NAME = "My Network";
+    string public NETWORK_NAME = "Lombard CCIP Network";
     // Default minimum delay (will be applied for any action that doesn't have a specific delay yet)
-    uint256 DEFAULT_MIN_DELAY = 3 days;
+    uint256 DEFAULT_MIN_DELAY = 0;
     // Cold actions delay (a delay that will be applied for major actions like upgradeProxy and setMiddleware)
-    uint256 COLD_ACTIONS_DELAY = 14 days;
+    uint256 COLD_ACTIONS_DELAY = 0;
     // Hot actions delay (a delay that will be applied for minor actions like setMaxNetworkLimit and setResolver)
     uint256 HOT_ACTIONS_DELAY = 0;
     // Admin address (will become executor, proposer, and default admin by default)
-    address NETWORK_ADMIN = 0x0000000000000000000000000000000000000000;
+    address NETWORK_ADMIN = 0xFC6Ffb38CAf426D7Ae921d691c2C6Da65E6E3DcA;
     // Maximum amount of delegation that network is ready to receive
     uint256 MAX_NETWORK_LIMIT = type(uint256).max;
-    // Resolver address (optional, is applied only if VetoSlasher is used)
-    address RESOLVER = 0x0000000000000000000000000000000000000000;
-
-    // Optional
-
     // Subnetwork Identifier (multiple subnetworks can be used, e.g., to have different resolvers for the same network)
     uint96 SUBNETWORK_ID = 0;
     // Metadata URI of the Network
     string METADATA_URI = "";
     // Salt for deterministic deployment
-    bytes11 SALT = "SymNetwork";
+    bytes11 SALT = "LCCIPNet";
 
     // ============ INTERNAL VARIABLES ============
 
@@ -119,39 +91,36 @@ contract DeployGovTokenStaking is Script {
             OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS.push(deployer);
         }
 
+        DeployVaultBase.SlasherParams memory emptySlasherParams;
         DeployVaultBase.DeployVaultParams memory deployVaultParams = DeployVaultBase.DeployVaultParams({
-            owner: VAULT_OWNER,
+            owner: address(0),
             vaultParams: DeployVaultBase.VaultParams({
                 baseParams: IVault.InitParams({
                     collateral: COLLATERAL,
-                    burner: BURNER,
+                    burner: address(0),
                     epochDuration: EPOCH_DURATION,
-                    depositWhitelist: WHITELISTED_DEPOSITORS.length > 0,
-                    isDepositLimit: DEPOSIT_LIMIT > 0,
-                    depositLimit: DEPOSIT_LIMIT,
+                    depositWhitelist: false,
+                    isDepositLimit: true,
+                    depositLimit: 0,
                     defaultAdminRoleHolder: VAULT_OWNER,
-                    depositWhitelistSetRoleHolder: VAULT_OWNER,
-                    depositorWhitelistRoleHolder: VAULT_OWNER,
+                    depositWhitelistSetRoleHolder: address(0),
+                    depositorWhitelistRoleHolder: address(0),
                     isDepositLimitSetRoleHolder: VAULT_OWNER,
                     depositLimitSetRoleHolder: VAULT_OWNER
                 }),
-                whitelistedDepositors: WHITELISTED_DEPOSITORS
+                whitelistedDepositors: new address[](0)
             }),
             delegatorIndex: 0, // NetworkRestakeDelegator
             delegatorParams: DeployVaultBase.DelegatorParams({
                 baseParams: IBaseDelegator.BaseParams({
-                    defaultAdminRoleHolder: VAULT_OWNER, hook: HOOK, hookSetRoleHolder: VAULT_OWNER
+                    defaultAdminRoleHolder: VAULT_OWNER, hook: address(0), hookSetRoleHolder: address(0)
                 }),
                 networkAllocationSettersOrNetwork: NETWORK_LIMIT_SET_ROLE_HOLDERS,
                 operatorAllocationSettersOrOperator: OPERATOR_NETWORK_SHARES_SET_ROLE_HOLDERS
             }),
-            withSlasher: WITH_SLASHER,
-            slasherIndex: SLASHER_INDEX,
-            slasherParams: DeployVaultBase.SlasherParams({
-                baseParams: IBaseSlasher.BaseParams({isBurnerHook: BURNER != address(0)}),
-                vetoDuration: VETO_DURATION,
-                resolverSetEpochsDelay: RESOLVER_SET_EPOCHS_DELAY
-            })
+            withSlasher: false,
+            slasherIndex: 0,
+            slasherParams: emptySlasherParams
         });
         vm.stopBroadcast();
         DeployVaultBase vaultDeployer = new DeployVaultBase();
@@ -172,7 +141,7 @@ contract DeployGovTokenStaking is Script {
         uint256[] memory maxNetworkLimits = new uint256[](1);
         maxNetworkLimits[0] = MAX_NETWORK_LIMIT;
         address[] memory resolvers = new address[](1);
-        resolvers[0] = RESOLVER;
+        resolvers[0] = address(0);
 
         DeployNetworkForVaultsBase.DeployNetworkForVaultsParams memory deployNetworkParams =
             DeployNetworkForVaultsBase.DeployNetworkForVaultsParams({
