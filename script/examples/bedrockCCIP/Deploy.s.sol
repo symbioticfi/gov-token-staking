@@ -26,10 +26,6 @@ contract Deploy is Script {
     uint256 HOT_ACTIONS_DELAY = 0;
     // Admin address (will become executor, proposer, and default admin by default)
     address NETWORK_ADMIN = address(0);
-    // Maximum amount of delegation that network is ready to receive
-    uint256 MAX_NETWORK_LIMIT = type(uint256).max;
-    // Subnetwork Identifier (multiple subnetworks can be used, e.g., to have different resolvers for the same network)
-    uint96 SUBNETWORK_ID = 0;
     // Metadata URI of the Network
     string METADATA_URI = "";
     // Salt for deterministic deployment
@@ -49,8 +45,6 @@ contract Deploy is Script {
         proposers[0] = NETWORK_ADMIN;
         address[] memory executors = new address[](1);
         executors[0] = NETWORK_ADMIN;
-        uint256[] memory maxNetworkLimits = new uint256[](1);
-        maxNetworkLimits[0] = MAX_NETWORK_LIMIT;
         address[] memory resolvers = new address[](1);
         resolvers[0] = address(0);
 
