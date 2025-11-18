@@ -2,7 +2,7 @@
 
 This repository contains a tooling that helps protocols' contributors to launch a staking program for their governance token.
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/network)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/symbioticfi/gov-token-staking)
 
 ## Documentation
 
